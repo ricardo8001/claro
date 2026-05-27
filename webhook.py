@@ -6,29 +6,49 @@ app = Flask(__name__)
 user_manager = UserManager()
 
 @app.route('/webhook', methods=['POST'])
-def webhook():
+def misticpay_webhook():
     try:
         data = request.get_json()
-        print("=== WEBHOOK RECEBIDO ===")
+        
+        print("="*50)
+        print("🔥 WEBHOOK RECEBIDO DO MISTICPAY")
         print(json.dumps(data, indent=2))
+        print("="*50)
 
-        if data.get("status") == "COMPLETO":
+        # Verifica se o pagamento foi completado
+        if data.get("status") == "COMPLETO" and data.get("transactionType") == "DEPOSITO":
             transaction_id = str(data.get("transactionId", ""))
-            value = data.get("value", 0) / 100
+            value = float(data.get("value", 0)) / 100  # converte centavos para reais
 
-            if "dep_" in transaction_id:
-                user_id = int(transaction_id.split("_")[1])
-                novo_saldo = user_manager.adicionar_saldo(user_id, value)
-                print(f"✅ SALDO ADICIONADO → User {user_id} + R${value:.2f} | Total: R${novo_saldo:.2f}")
+            if transaction_id.startswith("dep_"):
+                try:
+                    user_id = int(transaction_id.split("_")[1])
+                    novo_saldo = user_manager.adicionar_saldo(user_id, value)
+                    
+                    print(f"✅ SUCESSO! Saldo adicionado para usuário {user_id}")
+                    print(f"   Valor: R${value:.2f} | Saldo atual: R${novo_saldo:.2f}")
+                    
+                except Exception as e:
+                    print(f"❌ Erro ao processar user_id: {e}")
+            else:
+                print("⚠️ Transaction ID não possui formato esperado (dep_)")
+        else:
+            print("ℹ️ Status não é COMPLETO ou não é DEPÓSITO")
+
         return {"status": "success"}, 200
+
     except Exception as e:
-        print(f"Erro webhook: {e}")
+        print(f"❌ ERRO NO WEBHOOK: {e}")
         return {"status": "error"}, 500
+
 
 @app.route('/')
 def home():
-    return "Webhook MisticPay Online!"
+    return """
+    <h1>✅ Webhook MisticPay Online</h1>
+    <p>Bot: <strong>botezap.onrender.com</strong></p>
+    """
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-  
