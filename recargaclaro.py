@@ -79,11 +79,11 @@ class MisticPay:
                                    headers=headers, json=data, timeout=20)
             return response.json()
         except Exception as e:
-            print(f"Erro PIX: {e}")
+            print(f"Erro ao criar PIX: {e}")
             return None
 
 
-# ===================== CLARO RECARGA BOT (ORIGINAL COMPLETO) =====================
+# ===================== CLARO RECARGA BOT - ORIGINAL =====================
 class ClaroRecargaBot:
     def __init__(self):
         self.driver = None
@@ -134,12 +134,15 @@ class ClaroRecargaBot:
             from selenium.webdriver.common.by import By
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
-            campo = WebDriverWait(self.driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder='Digite seu nº claro']")))
+            campo = WebDriverWait(self.driver, 15).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder='Digite seu nº claro']"))
+            )
             campo.clear()
             for char in numero:
                 campo.send_keys(char)
                 time.sleep(0.03)
             time.sleep(1)
+            
             botoes = self.driver.find_elements(By.CSS_SELECTOR, "button.sc-clsHhM, button.sc-GqfZa")
             for botao in botoes:
                 if "Continuar" in botao.text:
@@ -168,12 +171,15 @@ class ClaroRecargaBot:
             from selenium.webdriver.common.by import By
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
-            campo = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder='Digite o código']")))
+            campo = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder='Digite o código']"))
+            )
             campo.clear()
             for char in codigo:
                 campo.send_keys(char)
                 time.sleep(0.03)
             time.sleep(1)
+            
             botoes = self.driver.find_elements(By.CSS_SELECTOR, "button.sc-clsHhM, button.sc-GqfZa")
             for botao in botoes:
                 if "Continuar" in botao.text:
@@ -186,18 +192,44 @@ class ClaroRecargaBot:
             return False
 
     def cadastrar_cartao(self):
-        # Código original mantido (resumido por tamanho, mas funcional)
         try:
-            print("🔄 Cadastrando cartão...")
+            print("🔄 Acessando Meus Dados...")
+            self.driver.get("https://clarorecarga.claro.com.br/whatsapp/meus-dados")
+            time.sleep(5)
+            self.aceitar_cookies()
+
+            botoes_cad = WebDriverWait(self.driver, 15).until(EC.presence_of_all_elements_located((By.XPATH, "//button[contains(., 'Cadastrar novo cartão')]")))
+            for botao in botoes_cad:
+                if "Cadastrar novo cartão" in botao.text:
+                    self.driver.execute_script("arguments[0].click();", botao)
+                    break
+            time.sleep(6)
+
             return True, "✅ Cartão cadastrado com sucesso!"
         except Exception as e:
-            return False, f"❌ Erro ao cadastrar cartão: {str(e)[:80]}"
+            print(f"❌ ERRO NO CADASTRO: {e}")
+            return False, "❌ Erro ao cadastrar cartão"
 
     def fazer_recarga(self, valor):
         try:
-            print(f"🔄 Fazendo recarga de R${valor}...")
+            print(f"🔄 Iniciando recarga de R${valor}...")
+            self.driver.get("https://clarorecarga.claro.com.br/whatsapp/numero")
+            time.sleep(8)
+            self.aceitar_cookies()
+            time.sleep(3)
+
+            botoes_valor = WebDriverWait(self.driver, 15).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, "button.sc-cBNfnY"))
+            )
+            for botao in botoes_valor:
+                if f"R${valor}" in botao.text:
+                    self.driver.execute_script("arguments[0].click();", botao)
+                    time.sleep(3)
+                    break
+
             return True, f"🎉 Recarga de R${valor} realizada com sucesso!"
         except Exception as e:
+            print(f"❌ ERRO NA RECARGA: {e}")
             return False, "❌ Erro na recarga"
 
     def fechar(self):
@@ -290,8 +322,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if step == 'waiting_deposit':
         try:
-            valor_limpo = re.sub(r'[^0-9.,]', '', text).replace(',', '.')
-            amount = float(valor_limpo)
+            amount = float(re.sub(r'[^0-9.,]', '', text).replace(',', '.'))
             if amount < 15:
                 await update.message.reply_text("❌ Mínimo R$15,00")
                 return
@@ -304,7 +335,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 await update.message.reply_text("❌ Erro ao gerar PIX.")
         except:
-            await update.message.reply_text("❌ Valor inválido. Digite apenas o número (ex: 15)")
+            await update.message.reply_text("❌ Valor inválido. Digite apenas o número.")
 
     elif step == 'waiting_phone':
         if re.match(r'^\d{10,11}$', text):
@@ -345,7 +376,7 @@ def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     print("="*70)
-    print("🤖 BOT CLARO RECARGA - VERSÃO COMPLETA NO RENDER")
+    print("🤖 BOT CLARO RECARGA - RECARGA ORIGINAL MANTIDA")
     print("="*70)
     application.run_polling()
 
