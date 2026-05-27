@@ -366,7 +366,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
-    TOKEN = "7748457693:AAHGW30nEHdbGBI6pCZNdQPzCUgUPiUfO4k"
+    TOKEN = "77"
     application = Application.builder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", menu_command))
